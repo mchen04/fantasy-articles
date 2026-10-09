@@ -28,6 +28,7 @@ The initial eight AI-assisted strategy guides form four editorial editions. They
 - Home presents original court artwork, a starting guide, recent reading, and edition links.
 - Archive filters season, edition/week, article type, and text search. URL parameters preserve filter state.
 - Permanent edition routes use `/archive/<season>/guides/week-<n>/` or `/archive/<season>/recaps/week-<n>/`.
+- Earlier/later links move through editions with one click or keyboard activation.
 - Article links preserve the current archive. Reading pages include contents, references, reading time, and link copying.
 - Light and dark themes persist in browser storage. Controls support keyboards and visible focus.
 - Unknown routes return a useful 404. Metadata, RSS, social artwork, and a sitemap support discovery.

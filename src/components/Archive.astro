@@ -8,6 +8,10 @@ const articles = await allArticles();
 const groups = editions(articles);
 const seasons = [...new Set(articles.map((article) => article.data.season))].sort().reverse();
 const initial = groups.find((group) => group.article.data.season === season && group.article.data.week === week && group.article.data.editionKind === kind);
+const sequence = groups.filter((group) => group.article.data.season === season && group.article.data.editionKind === kind).sort((a, b) => a.article.data.week - b.article.data.week);
+const index = sequence.findIndex((group) => group.path === initial?.path);
+const earlier = sequence[index - 1];
+const later = sequence[index + 1];
 ---
 <Layout title={initial ? `${editionLabel(initial.article)}: ${initial.article.data.edition}` : 'Article archive'} description="Browse Baseline by season, editorial week, or article type. Find NBA redraft strategy guides and verified league recaps in one archive." active="archive">
   <section class="archive-header wrap"><p class="section-label">NBA redraft library</p><h1>The archive</h1><p>A whole season of decisions. Find the guide you need.</p></section>
@@ -25,7 +29,11 @@ const initial = groups.find((group) => group.article.data.season === season && g
       <noscript><p>Enable JavaScript to use filters, or browse with the edition links below.</p></noscript>
     </aside>
     <section class="archive-results" aria-label="Articles">
-      <div class="results-header"><p id="results-count" role="status" aria-live="polite">{articles.length} articles across {groups.length} editions</p><span>Newest edition first</span></div>
+      <div class="results-header"><p id="results-count" role="status" aria-live="polite">{initial ? `${initial.entries.length} articles across 1 edition` : `${articles.length} articles across ${groups.length} editions`}</p><span>Newest edition first</span></div>
+      <nav class="edition-navigation" id="edition-navigation" aria-label="Adjacent editions" hidden={!initial}>
+        <a id="previous-edition" href={earlier?.path} hidden={!earlier}><span aria-hidden="true">←</span> Earlier {kind === 'league-week' ? 'week' : 'edition'}</a>
+        <a id="next-edition" href={later?.path} hidden={!later}>Later {kind === 'league-week' ? 'week' : 'edition'} <span aria-hidden="true">→</span></a>
+      </nav>
       <div id="empty-results" class="empty-state" hidden><h2 id="empty-title">No articles match</h2><p id="empty-description">Try a different search or reset the filters.</p><a href="/archive/" class="text-link" id="empty-reset">Show all articles</a></div>
       {groups.map(({ article, path, entries }) => <section class="archive-group" hidden={!!initial && path !== initial.path} data-group data-season={article.data.season} data-kind={article.data.editionKind} data-week={article.data.week}><div class="group-heading"><div><p>{article.data.season.replace('-', '–')} / {editionLabel(article)}</p><h2><a href={path}>{article.data.edition}</a></h2></div><a class="edition-permalink" href={path} aria-label={`Direct link to ${editionLabel(article)}`}>Edition link <span aria-hidden="true">↗</span></a></div><div class="archive-articles">{entries.map((entry) => <ArticleCard article={entry} archive />)}</div></section>)}
     </section>

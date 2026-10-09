@@ -34,6 +34,11 @@ const structured = { '@context': 'https://schema.org', '@type': 'Article', headl
             link.href = target.pathname + target.search;
             link.textContent = '← Back to your archive';
           }
+          for (const link of document.querySelectorAll<HTMLAnchorElement>('.related-section .article-card h3 a')) {
+            const article = new URL(link.href);
+            article.searchParams.set('from', target.pathname + target.search);
+            link.href = article.pathname + article.search;
+          }
         }
       } catch {}
     }

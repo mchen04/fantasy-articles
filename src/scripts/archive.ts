@@ -10,6 +10,7 @@ if (form) {
   const empty = document.querySelector<HTMLElement>('#empty-results')!;
   const title = document.querySelector('#empty-title')!;
   const description = document.querySelector('#empty-description')!;
+  const adjacent = document.querySelector<HTMLElement>('#edition-navigation')!;
 
   function readUrl() {
     const params = new URLSearchParams(location.search);
@@ -32,6 +33,20 @@ if (form) {
     for (const group of groups) {
       group.hidden = ![...group.querySelectorAll<HTMLElement>('[data-article]')].some((card) => !card.hidden);
       if (!group.hidden) visibleGroups++;
+    }
+    const selected = week.value.split(':');
+    const sequence = groups.filter((group) => group.dataset.season === selected[0] && group.dataset.kind === selected[1]).sort((a, b) => Number(a.dataset.week) - Number(b.dataset.week));
+    const index = sequence.findIndex((group) => group.dataset.week === selected[2]);
+    adjacent.hidden = index < 0;
+    for (const [id, target] of [['previous-edition', sequence[index - 1]], ['next-edition', sequence[index + 1]]] as const) {
+      const link = document.querySelector<HTMLAnchorElement>(`#${id}`)!;
+      link.hidden = !target;
+      if (target) {
+        const params = new URLSearchParams(location.search);
+        params.set('edition', `${target.dataset.season}:${target.dataset.kind}:${target.dataset.week}`);
+        link.href = `/archive/?${params}`;
+        link.textContent = `${id === 'previous-edition' ? '← Earlier' : 'Later'} ${target.dataset.kind === 'league-week' ? 'week' : 'edition'}${id === 'next-edition' ? ' →' : ''}`;
+      }
     }
     count.textContent = `${visible} ${visible === 1 ? 'article' : 'articles'} across ${visibleGroups} ${visibleGroups === 1 ? 'edition' : 'editions'}`;
     empty.hidden = visible !== 0;
