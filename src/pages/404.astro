@@ -1,6 +1,11 @@
 ---
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout title="Article not found" description="This page is not in the Baseline library. Browse the archive to find your next NBA redraft guide." noindex>
-  <section class="not-found wrap"><span class="error-number">404</span><h1>This page is off court.</h1><p>The address may be wrong, or the article may have moved. The archive keeps every published edition.</p><a class="button primary" href="/archive/">Browse the archive</a><a class="text-link" href="/">Return home</a></section>
+<Layout title="Did not page" description="This page is not on the DNP docket. Find a week in the archive or return to the front page." noindex>
+  <section class="not-found wrap">
+    <p class="error-code" aria-hidden="true">404</p>
+    <h1>DNP: Did not <mark>page.</mark></h1>
+    <p>This address is not on the docket. It may have been mistyped, or it was never filed in the first place.</p>
+    <p class="end-links"><a class="sticker-button" href="/archive/">Find a week</a><a class="text-link" href="/">Back to the front page <span aria-hidden="true">→</span></a></p>
+  </section>
 </Layout>

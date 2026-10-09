@@ -1,27 +1,83 @@
 ---
 import { render } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
-import ArticleCard from '../../components/ArticleCard.astro';
-import { allArticles, readingTime, displayDate, editionLabel, editionPath, type Article } from '../../lib/articles';
+import Filing from '../../components/Filing.astro';
+import { allArticles, editions, weekSequence, readingTime, displayDate, editionLabel, editionPath, kindLabel, docketNumber, seasonLabel, isRecap, type Article } from '../../lib/articles';
 export async function getStaticPaths() {
   return (await allArticles()).map((article) => ({ params: { slug: article.data.slug }, props: { article } }));
 }
 const { article } = Astro.props as { article: Article };
 const { Content, headings } = await render(article);
 const { data } = article;
-const related = (await allArticles()).filter((entry) => entry.id !== article.id && entry.data.season === data.season && entry.data.week === data.week && entry.data.editionKind === data.editionKind);
-const structured = { '@context': 'https://schema.org', '@type': 'Article', headline: data.title, description: data.description, datePublished: `${data.published}T00:00:00Z`, author: { '@type': 'Organization', name: data.author }, publisher: { '@type': 'Organization', name: 'Baseline' }, mainEntityOfPage: new URL(`/articles/${data.slug}/`, Astro.site).href, image: new URL('/social.png', Astro.site).href, articleSection: data.topic, inLanguage: 'en-US' };
+const recap = isRecap(article);
+const articles = await allArticles();
+const sections = headings.filter((heading) => heading.depth === 2);
+const sameEdition = articles.filter((entry) => entry.id !== article.id && editionPath(entry) === editionPath(article));
+const related = (sameEdition.length ? sameEdition : articles.filter((entry) => entry.id !== article.id)).slice(0, 3);
+const sequence = recap ? weekSequence(editions(articles), data.season) : [];
+const index = sequence.findIndex((group) => group.path === editionPath(article));
+const earlier = index > 0 ? sequence[index - 1].entries[0] : undefined;
+const later = index >= 0 ? sequence[index + 1]?.entries[0] : undefined;
+const exhibit = (i: number) => String.fromCharCode(65 + (i % 26));
+const structured = { '@context': 'https://schema.org', '@type': 'Article', headline: data.title, description: data.description, datePublished: `${data.published}T00:00:00Z`, author: { '@type': 'Organization', name: data.author }, publisher: { '@type': 'Organization', name: 'DNP: Did Not Plan' }, mainEntityOfPage: new URL(`/articles/${data.slug}/`, Astro.site).href, image: new URL('/social.png', Astro.site).href };
 ---
-<Layout title={data.title} description={data.description} article={{ published: data.published, author: data.author }} active="archive">
-  <article class="reading-page wrap">
-    <a class="back-link" id="archive-back" href={editionPath(article)}><span aria-hidden="true">←</span> Back to {editionLabel(article).toLowerCase()}</a>
-    <header class="article-header"><div class="card-meta"><span class="content-kind">{data.type === 'guide' ? 'Strategy guide' : 'Verified recap'}</span><a href={editionPath(article)}>{editionLabel(article)}: {data.edition}</a></div><h1>{data.title}</h1><p class="article-deck">{data.description}</p><div class="byline"><span>{data.author}</span><time datetime={data.published}>{displayDate(data.published)}</time><span>{readingTime(article)} min read</span></div></header>
-    <div class="reading-layout">
-      <aside class="reading-aside"><details class="contents" open><summary>In this article</summary><nav aria-label="Article contents">{headings.filter((heading) => heading.depth === 2).map((heading) => <a href={`#${heading.slug}`}>{heading.text}</a>)}</nav></details><button class="share-button" id="copy-link" type="button" hidden>Copy article link</button><p class="share-status" id="share-status" role="status" aria-live="polite"></p></aside>
-      <div class="article-body"><Content /><aside class="source-note"><h2>About this {data.type}</h2><p>{data.provenance.note}</p><p>{data.provenance.aiAssisted ? 'Written with AI assistance. ' : ''}Published as {data.type === 'guide' ? 'original strategy guidance, not a report of league results' : 'a recap of verified league content'}.</p><h3>References</h3><ul>{data.references.map((ref) => <li><a href={ref.url}>{ref.title}</a><span>Accessed {displayDate(ref.accessed)}</span></li>)}</ul></aside></div>
+<Layout title={data.title} description={data.description} article={{ published: data.published, author: data.author }}>
+  <article class="filing-page">
+    <header class="filing-head wrap">
+      <a class="back-link" id="archive-back" href={editionPath(article)}><span aria-hidden="true">←</span> <span data-back-label>Back to {recap ? `week ${data.week}` : 'clubhouse notes'}</span></a>
+      <p class="docket-strip"><span>{docketNumber(article)}</span><span>{seasonLabel(data.season)}</span><span>{kindLabel(article)}</span>{!recap && <span>Not a matchup week</span>}</p>
+      <h1>{data.title}</h1>
+      <p class="filing-deck">{data.description}</p>
+      <div class="byline">
+        <span>Filed by <strong>{data.author}</strong></span>
+        <span><time datetime={data.published}>{displayDate(data.published)}</time></span>
+        <span>{readingTime(article)} min read</span>
+      </div>
+      <p class:list={['stamp', recap ? 'stamp-verified' : 'stamp-note']}>{recap ? `Verified · ${editionLabel(article)}` : 'Desk note · No results inside'}</p>
+    </header>
+    <div class="reading wrap">
+      <aside class="reading-aside">
+        {sections.length > 1 && (
+          <nav class="toc" aria-labelledby="toc-heading">
+            <h2 id="toc-heading">In this filing</h2>
+            <ol>{sections.map((heading) => <li><a href={`#${heading.slug}`}>{heading.text}</a></li>)}</ol>
+          </nav>
+        )}
+        <button class="copy-link" id="copy-link" type="button" hidden>Copy link to this filing</button>
+        <p class="copy-status" id="share-status" role="status" aria-live="polite"></p>
+      </aside>
+      <div class="prose">
+        <Content />
+      </div>
+      <section class="record" aria-labelledby="record-heading">
+        <h2 id="record-heading">The record</h2>
+        <dl>
+          <div><dt>Filed by</dt><dd>{data.author}</dd></div>
+          <div><dt>Filed on</dt><dd><time datetime={data.published}>{displayDate(data.published)}</time></dd></div>
+          <div><dt>Filing type</dt><dd>{recap ? `${kindLabel(article)}, ${editionLabel(article).toLowerCase()} of ${seasonLabel(data.season)}` : `${kindLabel(article)}. Not a matchup week and not a recap.`}</dd></div>
+          {recap
+            ? <div><dt>Verified</dt><dd>By {data.provenance.verifiedBy} on <time datetime={data.provenance.verifiedAt}>{displayDate(data.provenance.verifiedAt!)}</time></dd></div>
+            : <div><dt>Verified</dt><dd>Not applicable. This note reports no league results.</dd></div>}
+          <div><dt>AI assistance</dt><dd>{data.provenance.aiAssisted ? 'Yes. Written with AI assistance.' : 'None declared.'}</dd></div>
+        </dl>
+        <p class="record-note">{data.provenance.note}</p>
+        <h3>Exhibits</h3>
+        <ol class="exhibits">{data.references.map((ref, i) => <li><span class="exhibit-tag">Exhibit {exhibit(i)}</span> <a href={ref.url} rel="noopener">{ref.title}</a> <span class="exhibit-date">accessed {displayDate(ref.accessed)}</span></li>)}</ol>
+      </section>
     </div>
-    <section class="related-section" aria-labelledby="related-heading"><div class="section-heading"><h2 id="related-heading">In the same edition</h2><a href={editionPath(article)}>View edition</a></div><div class="article-grid">{related.map((entry) => <ArticleCard article={entry} />)}</div></section>
-    <a class="back-link bottom-back" href={editionPath(article)} data-archive-back>Return to this edition <span aria-hidden="true">↗</span></a>
+    {(earlier || later) && (
+      <nav class="week-steps article-steps wrap" aria-label="Earlier and later weeks">
+        {earlier && <a href={`/articles/${earlier.data.slug}/`} rel="prev"><span aria-hidden="true">←</span> <span class="step-label">Earlier</span> <strong>Week {earlier.data.week}</strong></a>}
+        {later && <a href={`/articles/${later.data.slug}/`} rel="next"><span class="step-label">Later</span> <strong>Week {later.data.week}</strong> <span aria-hidden="true">→</span></a>}
+      </nav>
+    )}
+    {related.length > 0 && (
+      <section class="more wrap" aria-labelledby="related-heading">
+        <h2 id="related-heading" class="section-title">{sameEdition.length ? `Also in ${recap ? `week ${data.week}` : 'the clubhouse'}` : 'Also on file'}</h2>
+        <ol class="filings">{related.map((entry) => <Filing article={entry} />)}</ol>
+      </section>
+    )}
+    <p class="wrap end-links"><a class="sticker-button" href={editionPath(article)} data-archive-back><span data-back-label>{recap ? `Back to week ${data.week}` : 'Back to clubhouse notes'}</span></a><a class="text-link" href="/archive/">Every week <span aria-hidden="true">→</span></a></p>
   </article>
   <script type="application/ld+json" set:html={JSON.stringify(structured).replace(/</g, '\\u003c')} />
   <script>
@@ -32,25 +88,26 @@ const structured = { '@context': 'https://schema.org', '@type': 'Article', headl
         if (target.origin === location.origin && target.pathname.startsWith('/archive/')) {
           for (const link of document.querySelectorAll<HTMLAnchorElement>('#archive-back, [data-archive-back]')) {
             link.href = target.pathname + target.search;
-            link.textContent = '← Back to your archive';
+            const label = link.querySelector('[data-back-label]');
+            if (label) label.textContent = 'Back to your search';
           }
-          for (const link of document.querySelectorAll<HTMLAnchorElement>('.related-section .article-card h3 a')) {
-            const article = new URL(link.href);
-            article.searchParams.set('from', target.pathname + target.search);
-            link.href = article.pathname + article.search;
+          for (const link of document.querySelectorAll<HTMLAnchorElement>('.filing-page .filing h3 a, .article-steps a')) {
+            const next = new URL(link.href);
+            next.searchParams.set('from', target.pathname + target.search);
+            link.href = next.pathname + next.search;
           }
         }
       } catch {}
     }
     const copy = document.querySelector<HTMLButtonElement>('#copy-link');
     const status = document.querySelector('#share-status');
-    if (copy) {
+    if (copy && navigator.clipboard) {
       copy.hidden = false;
       copy.addEventListener('click', async () => {
         try {
           await navigator.clipboard.writeText(location.origin + location.pathname);
-          if (status) status.textContent = 'Article link copied.';
-        } catch { if (status) status.textContent = 'Copy the article address from your browser.'; }
+          if (status) status.textContent = 'Link copied. Spread the word.';
+        } catch { if (status) status.textContent = 'Copy the address from your browser bar.'; }
       });
     }
   </script>

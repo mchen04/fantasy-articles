@@ -1,6 +1,6 @@
-# Baseline
+# DNP: Did Not Plan
 
-Independent NBA redraft publication. Astro builds Markdown articles into static pages. The site needs no database, authentication, or runtime secrets.
+The petty paper of record for one NBA Redraft league. Astro builds Markdown league articles into a static tabloid-courtroom site. The site needs no database, authentication, or runtime secrets.
 
 Production: https://fantasy-articles.vercel.app
 
@@ -15,33 +15,37 @@ npm run verify
 npm run preview
 ```
 
-`npm run verify` validates article data, checks Astro types, builds production output, and checks every generated internal link and asset. CI runs this command on the exact article PR head. Vercel also runs it before deployment.
+`npm run verify` validates article data, checks Astro types, builds production output, and checks every generated internal link and asset. It also confirms the feed and sitemap list every article and that no retired guides, old branding, or private league links ship. CI runs this command on the exact article PR head. Vercel also runs it before deployment.
 
 ## Content
 
-Articles live in `src/content/articles/<slug>.md`. See [the content contract](docs/content-contract.md) for every field, edition rules, source standards, and publication authorization.
+Articles live in `src/content/articles/<slug>.md`. DNP publishes only league content:
 
-The initial eight AI-assisted strategy guides form four editorial editions. They all publish October 9, 2026. These groups do not claim NBA game weeks or real league results. Verified recaps can join the archive when real content is supplied.
+- **Weekly recaps** (`type: recap`): one completed, verified matchup week each, week 1 or later.
+- **Clubhouse notes** (`type: league-note`): league desk notes, always week 0, never a matchup week.
+
+See [the content contract](docs/content-contract.md) for every field, privacy rule, the authorized weekly workflow, and publication steps.
+
+The site launched with one clubhouse note and no recaps. The weekly archive stays honestly empty until the first verified recap is merged.
 
 ## Site behavior
 
-- Home presents original court artwork, a starting guide, recent reading, and edition links.
-- Archive filters season, edition/week, article type, and text search. URL parameters preserve filter state.
-- Permanent edition routes use `/archive/<season>/guides/week-<n>/` or `/archive/<season>/recaps/week-<n>/`.
-- Earlier/later links move through editions with one click or keyboard activation.
-- Article links preserve the current archive. Reading pages include contents, references, reading time, and link copying.
-- Light and dark themes persist in browser storage. Controls support keyboards and visible focus.
-- Unknown routes return a useful 404. Metadata, RSS, social artwork, and a sitemap support discovery.
+- Front page: tabloid lead for the newest filing, the weekly docket (or an empty-docket state), a sealed standings board that never shows zeros, and the house rules.
+- Find a week (`/archive/`): search plus season, week, and kind filters. URL parameters preserve filter state and browser history. Week routes are `/archive/<season>/recaps/week-<n>/`; notes live at `/archive/<season>/clubhouse/`.
+- Earlier/later links step between recap weeks on archive and article pages.
+- Article pages: docket header, contents, comfortable reading measure, "The record" provenance block with verifier and exhibits, and return links that preserve the reader's archive filters.
+- Design tokens (colors, type scale, spacing) live at the top of `src/styles/global.css`. Fonts: Anton (display), Source Serif 4 (reading), IBM Plex Mono (labels).
+- Visible keyboard focus, 44px touch targets, reduced-motion support, and a useful 404.
 
 ## Deploy
 
-The authorized initial build pushes directly to `main`. Use the existing logged-in Vercel CLI:
+`main` deploys to production through the Vercel Git integration on project `fantasy-articles`. Check a deployment with the logged-in CLI:
 
 ```sh
-vercel deploy --prod --yes
+vercel ls fantasy-articles
 vercel inspect https://fantasy-articles.vercel.app
 ```
 
-The Vercel project is `fantasy-articles`. The repository stores no credentials. Vercel project linkage stays in ignored `.vercel/` files. Evidence, screenshots, and browser receipts live outside Git.
+The repository stores no credentials. Vercel project linkage stays in ignored `.vercel/` files. Evidence, screenshots, and browser receipts live outside Git.
 
-For article automation, follow the exact-head PR procedure in the content contract. Do not configure a scheduler or private-message ingestion.
+Article automation follows the exact-head PR procedure in the content contract, including its bounded chat ingestion, weekly schedule, and privacy boundary.

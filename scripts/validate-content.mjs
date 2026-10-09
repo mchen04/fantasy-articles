@@ -7,11 +7,14 @@ const files = (await readdir(directory, { recursive: true })).filter((file) => f
 const slugs = new Set();
 const editions = new Map();
 const errors = [];
+// Private league locations and invites never belong in public article source.
+const privateLeague = /league[_ -]?id\b|fantasy\.espn\.com\/basketball\/(?:league|team|boxscore)|fantasysports\.yahoo\.com\/nba\/\d|sleeper\.(?:com|app)\/leagues?\/|fantrax\.com\/fantasy\/league|cbssports\.com\/basketball\/fantasy\/league|discord\.(?:gg|com\/invite)|groupme\.com\/join|chat\.whatsapp\.com/i;
 for (const file of files) {
   try {
     const source = await readFile(new URL(file, directory), 'utf8');
     const match = source.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
     if (!match) throw new Error('Use YAML frontmatter enclosed by --- lines');
+    if (privateLeague.test(source)) throw new Error('Private league IDs, league URLs, and chat invites are outside the public content contract');
     const data = parse(match[1]);
     const content = match[2];
     const article = articleSchema.parse(data);
@@ -36,4 +39,5 @@ for (const file of files) {
 }
 if (!files.length) errors.push('At least one published article is required');
 if (errors.length) { console.error(errors.join('\n')); process.exit(1); }
-console.log(`Content valid: ${files.length} articles in ${editions.size} editions. Factual verification remains an editorial requirement.`);
+const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
+console.log(`Content valid: ${plural(files.length, 'league article')} in ${plural(editions.size, 'edition')}. Factual verification remains an editorial requirement.`);

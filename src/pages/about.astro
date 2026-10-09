@@ -1,6 +1,33 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import Tape from '../components/Tape.astro';
 ---
-<Layout title="About Baseline" description="Baseline is an independent NBA redraft publication. Learn how our strategy guides, editorial editions, and verified league recaps work." active="about">
-  <div class="about-page wrap"><p class="section-label">About the publication</p><h1>Good decisions<br />outlast a hot streak.</h1><div class="about-layout"><p class="about-lead">Baseline is a reading room for fantasy basketball managers. We start with NBA redraft: draft a fresh roster each season, then make it better one decision at a time.</p><div class="article-body"><h2>What you can read today</h2><p>Eight original strategy guides cover league settings, draft choices, weekly planning, and roster moves. They form four editorial guide editions for the 2026–27 season.</p><p>Every starter guide publishes on October 9, 2026. Edition numbers organize the reading sequence. They do not represent NBA game weeks or league results.</p><h2 id="editorial-policy">Our editorial policy</h2><p>The starter guides carry the byline “Baseline Editorial (AI-assisted).” Codex writes these guides with AI assistance. Michael owns the publication; this byline does not claim he writes or verifies each guide.</p><p>Guides present general decision frameworks. They do not claim current player rankings, injury news, schedule counts, or league scores. Public references explain scoring and basketball terms.</p><p>League recaps appear after verified article content is supplied. Recaps must identify their sources, verifier, and verification date. We do not collect private messages or publish invented scores, results, or quotes.</p><h2>A library for the whole season</h2><p>The archive groups articles by season and week. Search by subject or filter by article type. Each edition has a permanent link, and article links keep your archive filters.</p><p><a href="/archive/">Browse the archive</a> or follow the <a href="/rss.xml">RSS feed</a> for new articles.</p><h2>Independent by design</h2><p>Baseline is not affiliated with the NBA or a fantasy platform. NBA names identify the sport we cover. The court illustration is original artwork.</p></div></div></div>
+<Layout title="About DNP" description="What DNP: Did Not Plan is, what it publishes about the league, and the house rules: verified recaps only, no manager identities, unknown never becomes zero." active="about">
+  <header class="page-head wrap">
+    <p class="kicker"><span class="flag">About DNP</span><span>Rules of the court</span></p>
+    <h1>One league. <mark>Zero chill.</mark> Strict rules.</h1>
+    <p class="page-dek">DNP: Did Not Plan is the blog of a single NBA Redraft league. It covers that league and nothing else, in the voice of a tabloid that thinks it is a courtroom.</p>
+  </header>
+  <Tape text="House rules in effect · Please remain seated" tilt="right" />
+  <div class="about wrap">
+    <div class="prose">
+      <h2 id="what-gets-filed">What gets filed</h2>
+      <p><strong>Weekly recaps.</strong> After a matchup week ends and its results are verified, the DNP Desk files a recap for that week. Each recap lives in the archive under its season and week number, with earlier and later links to walk the season in order.</p>
+      <p><strong>Clubhouse notes.</strong> Occasional notes from the league desk, like the opening note. They sit apart from the weekly recaps and are never numbered as a matchup week.</p>
+      <p>That is the whole menu. DNP does not publish general fantasy advice, player rankings, or NBA news.</p>
+      <h2 id="house-rules">House rules</h2>
+      <ol>
+        <li><strong>Verified or it didn't happen.</strong> A weekly recap is filed only from verified league data for that week. Every recap names who verified it and when. If a week's data is incomplete, the week waits.</li>
+        <li><strong>Teams, not people.</strong> No manager names, usernames, contact details, or private league links appear here. Private league identifiers and invite links are blocked by the build itself.</li>
+        <li><strong>Unknown is not zero.</strong> A number that has not been verified is left out and labeled as unknown. It is never filled in with a zero or a guess.</li>
+        <li><strong>No invented anything.</strong> No made-up quotes, trades, scores, injuries, or drama. The jokes are opinions. The facts are checked.</li>
+        <li><strong>The robot testifies.</strong> The DNP Desk writes with AI assistance and says so on every filing, under “The record.”</li>
+      </ol>
+      <h2 id="how-it-is-built">How it is built</h2>
+      <p>Every filing is a plain text file with its season, week, and verification details. When a new verified week is added, the front page, the weekly archive, the feed, and the sitemap update on their own. Nobody redesigns anything to publish week 9.</p>
+      <p>Each filing ends with “The record”: who filed it, when, whether and by whom it was verified, and a list of public exhibits. Private league material used to verify a recap stays private. It is described, never linked.</p>
+      <h2 id="corrections">Corrections</h2>
+      <p>If a filing turns out to be wrong, it gets fixed. The court may be petty, but it is not stubborn.</p>
+    </div>
+  </div>
 </Layout>

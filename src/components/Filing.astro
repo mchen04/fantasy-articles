@@ -1,0 +1,12 @@
+---
+import { readingTime, kindLabel, editionLabel, seasonLabel, displayDate, isRecap, type Article } from '../lib/articles';
+interface Props { article: Article; archive?: boolean }
+const { article, archive = false } = Astro.props;
+const { data } = article;
+const search = [data.title, data.description, data.topic, data.edition, kindLabel(article), editionLabel(article)].join(' ').toLowerCase();
+---
+<li class="filing" data-article={archive || undefined} data-season={data.season} data-week={data.week} data-type={data.type} data-kind={data.editionKind} data-search={search}>
+  <p class="filing-meta"><span class:list={['tag', isRecap(article) ? 'tag-recap' : 'tag-note']}>{kindLabel(article)}</span><span>{isRecap(article) ? editionLabel(article) : 'Not a matchup week'} · {seasonLabel(data.season)}</span><span><time datetime={data.published}>{displayDate(data.published)}</time> · {readingTime(article)} min read</span></p>
+  <h3><a href={`/articles/${data.slug}/`} data-article-link={archive || undefined}>{data.title}</a></h3>
+  <p class="filing-dek">{data.description}</p>
+</li>

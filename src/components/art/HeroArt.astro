@@ -1,0 +1,41 @@
+---
+import { burst } from '../../lib/burst';
+interface Props { verdicts?: boolean }
+const { verdicts = false } = Astro.props;
+---
+<svg class="hero-art" viewBox="0 0 560 560" role="img" aria-labelledby="hero-art-title">
+  <title id="hero-art-title">Illustration: a lime gavel slams down on a basketball stamped DNP, inside an acid lime starburst.</title>
+  <defs>
+    <pattern id="hero-dots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="7" cy="7" r="3" fill="#4a1a9c" /></pattern>
+    <clipPath id="hero-panel"><rect x="8" y="8" width="544" height="544" /></clipPath>
+  </defs>
+  <rect x="8" y="8" width="544" height="544" fill="#2b0b57" />
+  <rect x="8" y="8" width="544" height="544" fill="url(#hero-dots)" />
+  <g clip-path="url(#hero-panel)">
+    <polygon points={burst(280, 318, 330, 222, 20)} fill="#c8ff1f" />
+    <g class="hero-ball">
+      <circle cx="294" cy="334" r="150" fill="#170a26" />
+      <circle cx="280" cy="320" r="150" fill="#ff5a14" stroke="#170a26" stroke-width="9" />
+      <path d="M130 320h300M280 170v300M174 214c62 52 62 160 0 212M386 214c-62 52-62 160 0 212" fill="none" stroke="#170a26" stroke-width="7" />
+    </g>
+    <g class="hero-gavel" transform="translate(384 146) rotate(30)">
+      <rect x="-13" y="-230" width="26" height="230" rx="8" fill="#ff5a14" stroke="#170a26" stroke-width="7" />
+      <rect x="-92" y="-40" width="184" height="74" rx="12" fill="#f6f1e4" stroke="#170a26" stroke-width="9" />
+      <rect x="-66" y="-40" width="16" height="74" fill="#170a26" />
+      <rect x="50" y="-40" width="16" height="74" fill="#170a26" />
+    </g>
+    <path d="M292 92 276 66M276 124 248 112M286 156 254 156" stroke="#170a26" stroke-width="8" stroke-linecap="round" />
+    <path d="M462 96c22 22 30 52 24 82M494 78c28 28 38 66 30 104" fill="none" stroke="#170a26" stroke-width="6" stroke-linecap="round" />
+  </g>
+  <g transform="translate(282 352) rotate(-11)"><g class="hero-stamp">
+    <rect x="-142" y="-56" width="284" height="112" fill="#f6f1e4" stroke="#170a26" stroke-width="9" />
+    <rect x="-130" y="-44" width="260" height="88" fill="none" stroke="#170a26" stroke-width="3" />
+    <text x="0" y="31" text-anchor="middle" font-family="Anton, Impact, sans-serif" font-size="84" letter-spacing="10" fill="#170a26">DNP</text>
+  </g></g>
+  <g transform="translate(118 112) rotate(-14)">
+    <polygon points={burst(0, 0, 88, 70, 16)} fill="#f6f1e4" stroke="#170a26" stroke-width="5" />
+    <text x="0" y="2" text-anchor="middle" font-family="Anton, Impact, sans-serif" font-size="27" fill="#170a26">{verdicts ? 'VERIFIED' : 'ALLEGEDLY'}</text>
+    <text x="0" y="26" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-weight="700" font-size="12.5" fill="#170a26">{verdicts ? 'CHECKED FIRST' : 'NO VERDICTS YET'}</text>
+  </g>
+  <rect x="8" y="8" width="544" height="544" fill="none" stroke="#170a26" stroke-width="8" />
+</svg>

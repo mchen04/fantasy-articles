@@ -1,41 +1,91 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import ArticleCard from './ArticleCard.astro';
-import { allArticles, editions, editionLabel } from '../lib/articles';
-interface Props { season?: string; week?: number; kind?: string }
-const { season = '', week, kind = '' } = Astro.props;
+import Filing from './Filing.astro';
+import EmptyBench from './art/EmptyBench.astro';
+import { allArticles, editions, editionKey, isRecap, seasonLabel, weekSequence, docketCode } from '../lib/articles';
+interface Props { season?: string; week?: number; kind?: 'league-week' | 'clubhouse' }
+const { season = '', week, kind } = Astro.props;
 const articles = await allArticles();
 const groups = editions(articles);
+const recapWeeks = groups.filter((group) => isRecap(group.article));
+const clubhouse = groups.filter((group) => !isRecap(group.article));
 const seasons = [...new Set(articles.map((article) => article.data.season))].sort().reverse();
-const initial = groups.find((group) => group.article.data.season === season && group.article.data.week === week && group.article.data.editionKind === kind);
-const sequence = groups.filter((group) => group.article.data.season === season && group.article.data.editionKind === kind).sort((a, b) => a.article.data.week - b.article.data.week);
+const initial = groups.find((group) => group.article.data.season === season && group.article.data.editionKind === kind && (kind === 'clubhouse' || group.article.data.week === week));
+const sequence = initial && isRecap(initial.article) ? weekSequence(groups, season) : [];
 const index = sequence.findIndex((group) => group.path === initial?.path);
-const earlier = sequence[index - 1];
-const later = sequence[index + 1];
+const earlier = index > 0 ? sequence[index - 1] : undefined;
+const later = index >= 0 ? sequence[index + 1] : undefined;
+const pageTitle = initial ? (isRecap(initial.article) ? `Week ${initial.article.data.week}: ${initial.article.data.edition}` : `Clubhouse notes, ${seasonLabel(season)}`) : 'Find a week';
+const heading = initial ? (isRecap(initial.article) ? `Week ${initial.article.data.week}` : 'Clubhouse notes') : 'The docket';
 ---
-<Layout title={initial ? `${editionLabel(initial.article)}: ${initial.article.data.edition}` : 'Article archive'} description="Browse Baseline by season, editorial week, or article type. Find NBA redraft strategy guides and verified league recaps in one archive." active="archive">
-  <section class="archive-header wrap"><p class="section-label">NBA redraft library</p><h1>The archive</h1><p>A whole season of decisions. Find the guide you need.</p></section>
-  <div class="archive-layout wrap">
-    <aside class="archive-sidebar">
-      <form id="archive-filters" action="/archive/" method="get" data-initial-season={season} data-initial-week={week ?? ''} data-initial-kind={kind}>
-        <h2>Find an article</h2>
-        <div class="filter-field search-field"><label for="search">Search the archive</label><input type="search" id="search" name="q" placeholder="Try draft or roster" maxlength="100" /></div>
-        <div class="filter-field"><label for="season">Season</label><select id="season" name="season"><option value="">All seasons</option>{seasons.map((value) => <option value={value} selected={value === season}>{value.replace('-', '–')}</option>)}</select></div>
-        <div class="filter-field"><label for="type">Article type</label><select id="type" name="type"><option value="">All articles</option><option value="guide">Strategy guides</option><option value="recap">League recaps</option></select></div>
-        <div class="filter-field"><label for="week">Week / guide edition</label><select id="week" name="edition"><option value="">All weeks &amp; editions</option>{groups.map(({ article }) => <option value={`${article.data.season}:${article.data.editionKind}:${article.data.week}`} selected={article.data.season === season && article.data.week === week && article.data.editionKind === kind}>{article.data.season} · {editionLabel(article)}: {article.data.edition}</option>)}</select></div>
-        <div class="filter-actions"><button class="button primary" type="submit">Apply filters</button><a href="/archive/" id="clear-filters">Reset</a></div>
-      </form>
-      <p class="archive-context">Guide editions are editorial reading groups, not NBA game weeks. All starter guides publish October 9, 2026.</p>
-      <noscript><p>Enable JavaScript to use filters, or browse with the edition links below.</p></noscript>
-    </aside>
-    <section class="archive-results" aria-label="Articles">
-      <div class="results-header"><p id="results-count" role="status" aria-live="polite">{initial ? `${initial.entries.length} articles across 1 edition` : `${articles.length} articles across ${groups.length} editions`}</p><span>Newest edition first</span></div>
-      <nav class="edition-navigation" id="edition-navigation" aria-label="Adjacent editions" hidden={!initial}>
-        <a id="previous-edition" href={earlier?.path} hidden={!earlier}><span aria-hidden="true">←</span> Earlier {kind === 'league-week' ? 'week' : 'edition'}</a>
-        <a id="next-edition" href={later?.path} hidden={!later}>Later {kind === 'league-week' ? 'week' : 'edition'} <span aria-hidden="true">→</span></a>
+<Layout title={pageTitle} description="Every verified week of the DNP NBA Redraft league blog, in order. Search and filter weekly recaps and clubhouse notes." active="archive">
+  <header class="page-head wrap">
+    <p class="kicker"><span class="flag">Find a week</span><span>{initial ? `${seasonLabel(season)} · ${initial.article.data.edition}` : 'Every filing, in order'}</span></p>
+    <h1>{heading}</h1>
+    <p class="page-dek">{initial && !isRecap(initial.article) ? 'Notes from the league desk. These are not matchup weeks and never stand in for one.' : 'Every verified week of the season, in order. Search it, filter it, appeal nothing.'}</p>
+  </header>
+  <div class="docket wrap">
+    <form class="docket-filters" id="archive-filters" action="/archive/" method="get" data-initial-edition={initial ? editionKey(initial.article) : ''} data-recaps={recapWeeks.length}>
+      <h2 class="filters-title">Filter the docket</h2>
+      <div class="field field-search">
+        <label for="search">Search filings</label>
+        <div class="search-row"><input type="search" id="search" name="q" placeholder="Week or word" maxlength="100" autocomplete="off" /><button class="search-button" type="submit">Search</button></div>
+      </div>
+      <details class="more-filters" id="more-filters" open>
+      <summary><span>Season, week &amp; kind <span id="active-filters"></span></span></summary>
+      <div class="more-grid">
+      <div class="field">
+        <label for="season">Season</label>
+        <select id="season" name="season"><option value="">All seasons</option>{seasons.map((value) => <option value={value}>{seasonLabel(value)}</option>)}</select>
+      </div>
+      <div class="field">
+        <label for="week">Week</label>
+        <select id="week" name="edition">
+          <option value="">All weeks &amp; notes</option>
+          <optgroup label="Matchup weeks">
+            {recapWeeks.length ? recapWeeks.map(({ article }) => <option value={editionKey(article)}>{seasonLabel(article.data.season)} · Week {article.data.week}</option>) : <option value="" disabled>None filed yet</option>}
+          </optgroup>
+          <optgroup label="Not a matchup week">
+            {clubhouse.map(({ article }) => <option value={editionKey(article)}>{seasonLabel(article.data.season)} · Clubhouse notes</option>)}
+          </optgroup>
+        </select>
+      </div>
+      <div class="field">
+        <label for="type">Kind</label>
+        <select id="type" name="type"><option value="">Everything</option><option value="recap">Weekly recaps</option><option value="league-note">Clubhouse notes</option></select>
+      </div>
+      </div>
+      </details>
+      <p class="filter-actions"><a href="/archive/" id="clear-filters" class="text-link">Clear filters</a></p>
+      <noscript><p class="filters-note">Filters need JavaScript. Every week and note is still listed below.</p></noscript>
+    </form>
+
+    <section class="docket-results" aria-labelledby="results-heading">
+      <h2 id="results-heading" class="visually-hidden">Filings</h2>
+      <p class="results-count" id="results-count" role="status" aria-live="polite">{articles.length} {articles.length === 1 ? 'filing' : 'filings'}</p>
+      <nav class="week-steps" id="edition-navigation" aria-label="Earlier and later weeks" hidden={sequence.length < 2}>
+        <a id="previous-edition" href={earlier?.path} hidden={!earlier} rel="prev"><span aria-hidden="true">←</span> <span class="step-label">Earlier</span> <strong>{earlier ? `Week ${earlier.article.data.week}` : ''}</strong></a>
+        <a id="next-edition" href={later?.path} hidden={!later} rel="next"><span class="step-label">Later</span> <strong>{later ? `Week ${later.article.data.week}` : ''}</strong> <span aria-hidden="true">→</span></a>
       </nav>
-      <div id="empty-results" class="empty-state" hidden><h2 id="empty-title">No articles match</h2><p id="empty-description">Try a different search or reset the filters.</p><a href="/archive/" class="text-link" id="empty-reset">Show all articles</a></div>
-      {groups.map(({ article, path, entries }) => <section class="archive-group" hidden={!!initial && path !== initial.path} data-group data-season={article.data.season} data-kind={article.data.editionKind} data-week={article.data.week}><div class="group-heading"><div><p>{article.data.season.replace('-', '–')} / {editionLabel(article)}</p><h2><a href={path}>{article.data.edition}</a></h2></div><a class="edition-permalink" href={path} aria-label={`Direct link to ${editionLabel(article)}`}>Edition link <span aria-hidden="true">↗</span></a></div><div class="archive-articles">{entries.map((entry) => <ArticleCard article={entry} archive />)}</div></section>)}
+      {recapWeeks.length === 0 && (
+        <div class="no-weeks" id="no-weeks">
+          <EmptyBench />
+          <div><h3>No weekly recaps on file</h3><p>No matchup week has been verified and filed yet. When one is, it appears here under its week number automatically. Until then the only filing is the clubhouse note below.</p></div>
+        </div>
+      )}
+      <div class="empty-state" id="empty-results" hidden><h3 id="empty-title">Nothing matches</h3><p id="empty-description">Try a different search, or clear the filters.</p><a href="/archive/" class="text-link" id="empty-reset">Show every filing</a></div>
+      {groups.map(({ article, path, entries }) => (
+        <section class:list={['hearing', { 'hearing-note': !isRecap(article) }]} data-group data-path={path} data-edition={editionKey(article)} data-season={article.data.season} data-kind={article.data.editionKind} data-week={article.data.week} hidden={!!initial && path !== initial.path}>
+          <header class="hearing-head">
+            <span class="hearing-code" aria-hidden="true">{docketCode(article)}</span>
+            <div>
+              <p class="hearing-label">{seasonLabel(article.data.season)} · {isRecap(article) ? `Week ${article.data.week}` : 'Not a matchup week'}</p>
+              <h3><a href={path}>{isRecap(article) ? `Week ${article.data.week}: ${article.data.edition}` : 'Clubhouse notes'}</a></h3>
+            </div>
+          </header>
+          <ol class="filings">{entries.map((entry) => <Filing article={entry} archive />)}</ol>
+        </section>
+      ))}
     </section>
   </div>
   <script src="../scripts/archive.ts"></script>

@@ -5,6 +5,8 @@ const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
   return !Number.isNaN(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === value;
 }, 'Use a real ISO calendar date');
 
+// DNP publishes league content only: verified weekly recaps and clubhouse notes.
+// Clubhouse notes use week 0 and never stand in for a completed matchup week.
 export const articleSchema = z.object({
   schemaVersion: z.literal(1),
   slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
@@ -16,13 +18,13 @@ export const articleSchema = z.object({
   league: z.literal('NBA'),
   format: z.literal('redraft'),
   season: z.string().regex(/^\d{4}-\d{2}$/).refine((value) => Number(value.slice(5)) === (Number(value.slice(0, 4)) + 1) % 100, 'Season must span consecutive years'),
-  week: z.number().int().min(1).max(60),
+  week: z.number().int().min(0).max(60),
   edition: z.string().min(3).max(70),
-  editionKind: z.enum(['editorial', 'league-week']),
-  type: z.enum(['guide', 'recap']),
-  topic: z.enum(['Foundations', 'Draft room', 'Weekly planning', 'Roster decisions', 'League recap']),
+  editionKind: z.enum(['league-week', 'clubhouse']),
+  type: z.enum(['recap', 'league-note']),
+  topic: z.enum(['League recap', 'League desk']),
   provenance: z.object({
-    kind: z.enum(['original-guide', 'verified-recap']),
+    kind: z.enum(['verified-recap', 'original-note']),
     note: z.string().min(30).max(400),
     aiAssisted: z.boolean(),
     verifiedBy: z.string().min(3).optional(),
@@ -34,10 +36,10 @@ export const articleSchema = z.object({
     accessed: date,
   }).strict()).min(1),
 }).strict().superRefine((article, ctx) => {
-  if (article.type === 'guide' && (article.editionKind !== 'editorial' || article.provenance.kind !== 'original-guide')) {
-    ctx.addIssue({ code: 'custom', message: 'Guides belong to editorial editions and use original-guide provenance' });
+  if (article.type === 'recap' && (article.editionKind !== 'league-week' || article.provenance.kind !== 'verified-recap' || !article.provenance.verifiedBy || !article.provenance.verifiedAt || article.topic !== 'League recap' || article.week < 1)) {
+    ctx.addIssue({ code: 'custom', message: 'Recaps need league-week grouping, week 1 or later, verified-recap provenance, a verifier, a verification date, and League recap topic' });
   }
-  if (article.type === 'recap' && (article.editionKind !== 'league-week' || article.provenance.kind !== 'verified-recap' || !article.provenance.verifiedBy || !article.provenance.verifiedAt || article.topic !== 'League recap')) {
-    ctx.addIssue({ code: 'custom', message: 'Recaps need league-week grouping, verified-recap provenance, a verifier, a verification date, and League recap topic' });
+  if (article.type === 'league-note' && (article.editionKind !== 'clubhouse' || article.provenance.kind !== 'original-note' || article.topic !== 'League desk' || article.week !== 0 || article.provenance.verifiedBy || article.provenance.verifiedAt)) {
+    ctx.addIssue({ code: 'custom', message: 'League notes need clubhouse grouping, week 0, original-note provenance, League desk topic, and no recap verification fields' });
   }
 });

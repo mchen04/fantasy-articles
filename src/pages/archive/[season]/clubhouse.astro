@@ -1,0 +1,8 @@
+---
+import Archive from '../../../components/Archive.astro';
+import { allArticles, editions, isRecap } from '../../../lib/articles';
+export async function getStaticPaths() {
+  return editions(await allArticles()).filter(({ article }) => !isRecap(article)).map(({ article }) => ({ params: { season: article.data.season }, props: { season: article.data.season, kind: 'clubhouse' as const } }));
+}
+---
+<Archive {...Astro.props} />

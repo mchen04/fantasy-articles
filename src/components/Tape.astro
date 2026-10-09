@@ -1,0 +1,6 @@
+---
+interface Props { text?: string; tilt?: 'left' | 'right' }
+const { text = 'Verified data only · Do not cross', tilt = 'left' } = Astro.props;
+const line = Array.from({ length: 8 }, () => text).join('  ✶  ');
+---
+<div class="tape-wrap" aria-hidden="true"><div class:list={['tape', `tape-${tilt}`]}><span>{line}</span></div></div>
