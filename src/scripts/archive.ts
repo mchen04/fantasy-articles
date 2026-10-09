@@ -57,6 +57,7 @@ if (form) {
   form.addEventListener('submit', (event) => { event.preventDefault(); apply(); });
   for (const select of [season, week, type]) select.addEventListener('change', () => {
     if (select === season && week.value && season.value && !week.value.startsWith(`${season.value}:`)) week.value = '';
+    if (select === week && week.value && season.value && !week.value.startsWith(`${season.value}:`)) season.value = week.value.split(':')[0];
     apply();
   });
   for (const link of document.querySelectorAll<HTMLAnchorElement>('#clear-filters, #empty-reset')) link.addEventListener('click', (event) => { event.preventDefault(); form.reset(); season.value = ''; week.value = ''; type.value = ''; search.value = ''; apply(); });
