@@ -1,0 +1,39 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Court from '../components/Court.astro';
+import ArticleCard from '../components/ArticleCard.astro';
+import { allArticles, editions, readingTime } from '../lib/articles';
+const articles = await allArticles();
+const featured = articles.find((article) => article.data.slug === 'build-a-weekly-roster-routine') ?? articles[0];
+const groups = editions(articles);
+const latest = articles.filter((article) => article.id !== featured.id).slice(0, 3);
+---
+<Layout title="Baseline" description="Practical NBA redraft guides for draft night, weekly lineups, and better roster decisions. Browse every editorial edition." active="home">
+  <div class="publication-strip wrap"><span>NBA redraft</span><span>2026–27 season</span><span>Independent strategy &amp; analysis</span></div>
+  <section class="home-hero wrap" aria-labelledby="hero-heading">
+    <div class="hero-copy">
+      <p class="section-label">The weekly playbook</p>
+      <h1 id="hero-heading">A better read<br />on your roster.</h1>
+      <p class="hero-description">Draft with a plan. Manage with purpose. Practical fantasy basketball guides for every part of the season.</p>
+      <a class="button primary" href="/archive/">Explore the guides <span aria-hidden="true">↗</span></a>
+      <p class="hero-caption">{groups.length} editions. {articles.length} useful reads.</p>
+    </div>
+    <Court />
+  </section>
+  <section class="lead-section wrap" aria-labelledby="featured-heading">
+    <div class="section-heading"><h2 id="featured-heading">Start here</h2><span>A repeatable plan for the season</span></div>
+    <div class="lead-story">
+      <div class="lead-marker" aria-hidden="true"><span>Every<br />week.</span><svg viewBox="0 0 140 100"><path d="M15 55h100m-22-22 22 22-22 22" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="15" cy="55" r="8" fill="currentColor"/></svg></div>
+      <div><div class="card-meta"><span class="content-kind">Strategy guide</span><span>{readingTime(featured)} min read</span></div><h2><a href={`/articles/${featured.data.slug}/`}>{featured.data.title}</a></h2><p>{featured.data.description}</p></div>
+    </div>
+  </section>
+  <section class="wrap latest-section" aria-labelledby="latest-heading">
+    <div class="section-heading"><h2 id="latest-heading">From the playbook</h2><a href="/archive/">View all articles</a></div>
+    <div class="article-grid">{latest.map((article) => <ArticleCard article={article} />)}</div>
+  </section>
+  <section class="edition-section wrap" aria-labelledby="editions-heading">
+    <div class="edition-intro"><h2 id="editions-heading">Find your next move.</h2><p>Browse by editorial week, from the first draft decision to the next roster move.</p><p class="muted">Guide editions are reading groups, not NBA game weeks.</p></div>
+    <div class="edition-list">{[...groups].reverse().map(({ article, path, entries }) => <a href={path}><span class="edition-number">{article.data.week.toString().padStart(2, '0')}</span><div><h3>{article.data.edition}</h3><span>Guide edition {article.data.week} · {entries.length} articles</span></div><span aria-hidden="true">↗</span></a>)}</div>
+  </section>
+  <aside class="publication-note wrap"><span class="note-dot" aria-hidden="true"></span><p>These are original, AI-assisted strategy guides. League recaps appear after verified article content is supplied. <a href="/about/">How we publish</a></p></aside>
+</Layout>

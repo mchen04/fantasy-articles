@@ -1,0 +1,52 @@
+---
+import { render } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import ArticleCard from '../../components/ArticleCard.astro';
+import { allArticles, readingTime, displayDate, editionLabel, editionPath, type Article } from '../../lib/articles';
+export async function getStaticPaths() {
+  return (await allArticles()).map((article) => ({ params: { slug: article.data.slug }, props: { article } }));
+}
+const { article } = Astro.props as { article: Article };
+const { Content, headings } = await render(article);
+const { data } = article;
+const related = (await allArticles()).filter((entry) => entry.id !== article.id && entry.data.season === data.season && entry.data.week === data.week && entry.data.editionKind === data.editionKind);
+const structured = { '@context': 'https://schema.org', '@type': 'Article', headline: data.title, description: data.description, datePublished: `${data.published}T00:00:00Z`, author: { '@type': 'Organization', name: data.author }, publisher: { '@type': 'Organization', name: 'Baseline' }, mainEntityOfPage: new URL(`/articles/${data.slug}/`, Astro.site).href, image: new URL('/social.png', Astro.site).href, articleSection: data.topic, inLanguage: 'en-US' };
+---
+<Layout title={data.title} description={data.description} article={{ published: data.published, author: data.author }} active="archive">
+  <article class="reading-page wrap">
+    <a class="back-link" id="archive-back" href={editionPath(article)}><span aria-hidden="true">←</span> Back to {editionLabel(article).toLowerCase()}</a>
+    <header class="article-header"><div class="card-meta"><span class="content-kind">{data.type === 'guide' ? 'Strategy guide' : 'Verified recap'}</span><a href={editionPath(article)}>{editionLabel(article)}: {data.edition}</a></div><h1>{data.title}</h1><p class="article-deck">{data.description}</p><div class="byline"><span>{data.author}</span><time datetime={data.published}>{displayDate(data.published)}</time><span>{readingTime(article)} min read</span></div></header>
+    <div class="reading-layout">
+      <aside class="reading-aside"><details class="contents" open><summary>In this article</summary><nav aria-label="Article contents">{headings.filter((heading) => heading.depth === 2).map((heading) => <a href={`#${heading.slug}`}>{heading.text}</a>)}</nav></details><button class="share-button" id="copy-link" type="button" hidden>Copy article link</button><p class="share-status" id="share-status" role="status" aria-live="polite"></p></aside>
+      <div class="article-body"><Content /><aside class="source-note"><h2>About this {data.type}</h2><p>{data.provenance.note}</p><p>{data.provenance.aiAssisted ? 'Written with AI assistance. ' : ''}Published as {data.type === 'guide' ? 'original strategy guidance, not a report of league results' : 'a recap of verified league content'}.</p><h3>References</h3><ul>{data.references.map((ref) => <li><a href={ref.url}>{ref.title}</a><span>Accessed {displayDate(ref.accessed)}</span></li>)}</ul></aside></div>
+    </div>
+    <section class="related-section" aria-labelledby="related-heading"><div class="section-heading"><h2 id="related-heading">In the same edition</h2><a href={editionPath(article)}>View edition</a></div><div class="article-grid">{related.map((entry) => <ArticleCard article={entry} />)}</div></section>
+    <a class="back-link bottom-back" href={editionPath(article)} data-archive-back>Return to this edition <span aria-hidden="true">↗</span></a>
+  </article>
+  <script type="application/ld+json" set:html={JSON.stringify(structured).replace(/</g, '\\u003c')} />
+  <script>
+    const from = new URLSearchParams(location.search).get('from');
+    if (from) {
+      try {
+        const target = new URL(from, location.origin);
+        if (target.origin === location.origin && target.pathname.startsWith('/archive/')) {
+          for (const link of document.querySelectorAll<HTMLAnchorElement>('#archive-back, [data-archive-back]')) {
+            link.href = target.pathname + target.search;
+            link.textContent = '← Back to your archive';
+          }
+        }
+      } catch {}
+    }
+    const copy = document.querySelector<HTMLButtonElement>('#copy-link');
+    const status = document.querySelector('#share-status');
+    if (copy) {
+      copy.hidden = false;
+      copy.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(location.origin + location.pathname);
+          if (status) status.textContent = 'Article link copied.';
+        } catch { if (status) status.textContent = 'Copy the article address from your browser.'; }
+      });
+    }
+  </script>
+</Layout>

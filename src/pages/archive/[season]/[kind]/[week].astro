@@ -1,0 +1,8 @@
+---
+import Archive from '../../../../components/Archive.astro';
+import { allArticles, editions } from '../../../../lib/articles';
+export async function getStaticPaths() {
+  return editions(await allArticles()).map(({ article }) => ({ params: { season: article.data.season, kind: article.data.editionKind === 'editorial' ? 'guides' : 'recaps', week: `week-${article.data.week}` }, props: { season: article.data.season, week: article.data.week, kind: article.data.editionKind } }));
+}
+---
+<Archive {...Astro.props} />
