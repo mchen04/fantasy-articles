@@ -5,4 +5,5 @@ export default defineConfig({
   output: 'static',
   trailingSlash: 'always',
   markdown: { syntaxHighlight: false },
+  devToolbar: { enabled: false },
 });

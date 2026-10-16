@@ -42,5 +42,29 @@ for (const file of files) {
     } catch { errors.push(`${file}: broken internal asset or route ${value}`); }
   }
 }
+const config = (await import(new URL('../astro.config.mjs', import.meta.url))).default;
+if (config.devToolbar?.enabled !== false) errors.push('astro.config.mjs: keep devToolbar disabled so npm run dev shows pages as production does');
+const shareKeys = ['og:title', 'og:description', 'og:url', 'og:image', 'og:image:alt', 'og:image:type', 'og:image:width', 'og:image:height', 'twitter:card', 'twitter:title', 'twitter:description', 'twitter:image', 'twitter:image:alt'];
+for (const file of files) {
+  const html = await readFile(join(root, file), 'utf8');
+  const tags = [...html.matchAll(/<meta (?:property|name)="([^"]+)" content="([^"]*)"/g)];
+  const card = {};
+  for (const key of [...shareKeys, 'description']) {
+    const values = tags.filter((tag) => tag[1] === key).map((tag) => tag[2].replaceAll('&amp;', '&'));
+    if (values.length !== 1) errors.push(`${file}: needs exactly one ${key} meta tag, has ${values.length}`);
+    card[key] = values[0] ?? '';
+  }
+  for (const key of ['title', 'description', 'image', 'image:alt']) if (card[`twitter:${key}`] !== card[`og:${key}`]) errors.push(`${file}: twitter:${key} differs from og:${key}`);
+  if (card['og:description'] !== card.description) errors.push(`${file}: og:description differs from the page description`);
+  if (card['twitter:card'] !== 'summary_large_image') errors.push(`${file}: twitter:card must be summary_large_image`);
+  const image = URL.parse(card['og:image']);
+  if (!image || image.origin !== new URL(config.site).origin) { errors.push(`${file}: share image must be on ${config.site}`); continue; }
+  if (!image.search) errors.push(`${file}: share image URL needs a version query so link previews refetch a changed image`);
+  const png = await readFile(join(root, image.pathname)).catch(() => null);
+  if (card['og:image:type'] !== 'image/png') errors.push(`${file}: og:image:type must be image/png`);
+  if (!png || png.toString('latin1', 1, 4) !== 'PNG') { errors.push(`${file}: share image ${image.pathname} is not a shipped PNG`); continue; }
+  const size = [png.readUInt32BE(16), png.readUInt32BE(20)];
+  if (`${size}` !== `${card['og:image:width']},${card['og:image:height']}` || `${size}` !== '1200,630') errors.push(`${file}: share image is ${size.join('x')}, tags say ${card['og:image:width']}x${card['og:image:height']}; it must be 1200x630`);
+}
 if (errors.length) { console.error(errors.join('\n')); process.exit(1); }
-console.log(`Static output valid: ${files.length} pages, ${links} internal links/assets checked; ${published.size} published articles in feed and sitemap; no retired guides, old branding, or private league links.`);
+console.log(`Static output valid: ${files.length} pages, ${links} internal links/assets checked; ${published.size} published articles in feed and sitemap; share cards complete with a 1200x630 image; no retired guides, old branding, or private league links.`);
